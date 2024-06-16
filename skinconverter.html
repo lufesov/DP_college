@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	
+    <script src="../js/jq.js"></script>
+</head>
+
+<body>
+	<!-- use <u>...</u> to mark on-mouse-over help / title tag -->
+
+	<div id="images" style="display: none;">
+		<table>
+			<tr>
+				<td>
+					<input id="dstImg" type="text" value="" style="display: none;" border="1"
+						alt="Placeholder for new skin. When it shows the proper skin: Right-Click; Save Image As ..."
+						title="Right-Click; Save Image As ..." />
+				</td>
+				<td rowspan="2" valign="top" style="min-width:64px;">
+					<div id="characterElementId"></div>
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<img id="srcImg" src="" border="1" style="display: none;" alt="Placeholder for the source skin" /><br />
+				</td>
+			</tr>
+		</table>
+	</div>
+	
+	<div id="asdasd"></div>
+<script>
+	function ggq() {
+   		 $("#asdasd").html('<input type="file" id="imgLoader" accept="image/png" onChange="loadImage()" />');
+	}
+	ggq();
+</script>
+
+	<!-- loading local js files with UTF-8 characters will fail without charset="utf-8" -->
+	
+	<script type="text/javascript" charset="utf-8">
+
+		// Global string constants to avoid quoted strings in the code
+		// Body Parts
+		const constHead = "Head";
+		const constHat = "Hat";
+		const constBody = "Body";
+		const constJacket = "Jacket";
+		const constArmLeft = "ArmLeft";
+		const constLegLeft = "LegLeft";
+		const constSleeveLeft = "SleeveLeft";
+		const constTrouserLeft = "TrouserLeft";
+		const constArmRight = "ArmRight";
+		const constLegRight = "LegRight";
+		const constSleeveRight = "SleeveRight";
+		const constTrouserRight = "TrouserRight";
+		const constBodyParts = {
+			1: constHead, 2: constHat, 3: constBody, 4: constJacket,
+			5: constArmLeft, 6: constLegLeft, 7: constSleeveLeft, 8: constTrouserLeft,
+			9: constArmRight, 10: constLegRight, 11: constSleeveRight, 12: constTrouserRight
+		};
+
+		// Faces
+		const constFaceTop = "top";
+		const constFaceBottom = "bottom";
+		const constFaceLeft = "left";
+		const constFaceFront = "front";
+		const constFaceRight = "right";
+		const constFaceBack = "back";
+		const constFacesAll = "all";
+		const constFacesLeftFrontRight = "lfr";
+		const constFaceUnusedL = "unusedL";
+		const constFaceUnusedR = "unusedR";
+		const constBoxFaces = { 1: constFaceRight, 2: constFaceLeft, 3: constFaceTop, 4: constFaceBottom, 5: constFaceFront, 6: constFaceBack };
+
+		// Minimum width of the UV map if each face is represented by a pixel.
+		const constUvWidth = 16;
+		// Default Minecraft skin width: 64px
+		const constDefaultUvImageWidth = 64; 
+		
+		var uvFaceWidth = constDefaultUvImageWidth / constUvWidth;
+
+		function faceArea(x, y, w, h) {
+			this.x = x;
+			this.y = y;
+			this.w = w;
+			this.h = h;
+		}
+
+		class UvArea {
+			// supported types:
+			constructor(type) {
+				this.type = type;
+				if ( (this.type == constHead) || (this.type == constHat) ) {
+					// assume constHead
+					this.px = 0;
+					this.py = 0;
+					this.width = 2;
+					this.height = 2;
+					this.depth = 2;
+					if (this.type == constHat) {
+						this.px = 8;
+						this.py = 0;
+					}
+				} else if ( (this.type == constBody) || (this.type == constJacket) ) {
+					// assume constBody
+					this.px = 4;
+					this.py = 4;		
+					this.width = 2;
+					this.height = 3;
+					this.depth = 1;
+					if (this.type == constJacket) {
+						this.px = 4;
+						this.py = 8;
+					}
+				} else {
+					// assume constLegRight
+					this.px = 0;
+					this.py = 4;
+					this.width = 1;
+					this.height = 3;
+					this.depth = 1;			
+					if (this.type == constArmRight) {
+						this.px = 10;
+						this.py = 4;
+					} else if (this.type == constTrouserRight) {
+						this.px = 0;
+						this.py = 8;
+					} else if (this.type == constSleeveRight) {
+						this.px = 10;
+						this.py = 8;
+					} else	if (this.type == constTrouserLeft) {
+						this.px = 0;
+						this.py = 12;
+					} else if (this.type == constLegLeft) {
+						this.px = 4;
+						this.py = 12;
+					} else if (this.type == constArmLeft) {
+						this.px = 8;
+						this.py = 12;
+					} else if (this.type == constSleeveLeft) {
+						this.px = 12;
+						this.py = 12;
+					}
+				}
+			}
+			get top() {
+				return new faceArea(this.px + this.depth, this.py, this.width, this.depth);
+			}
+			get bottom() {
+				return new faceArea(this.px + this.depth + this.width, this.py, this.width, this.depth);
+			}
+			get left() {
+				return new faceArea(this.px, this.py + this.depth, this.depth, this.height);
+			}
+			get front() {
+				return new faceArea(this.px + this.depth, this.py + this.depth, this.width, this.height);
+			}
+			get right() {
+				return new faceArea(this.px + this.depth + this.width, this.py + this.depth, this.depth, this.height);
+			}
+			get back() {
+				return new faceArea(this.px + 2*this.depth + this.width, this.py + this.depth, this.width, this.height);
+			}
+			get all() {
+				return new faceArea(this.px, this.py, 2*(this.depth + this.width), this.depth + this.height);
+			}
+			get lfr() {
+				// Left Front Right
+				return new faceArea(this.px, this.py + this.depth, 2*this.depth + this.width, this.height);
+			}
+			get unusedL() {
+				return new faceArea(this.px, this.py, this.depth, this.depth);
+			}
+			get unusedR() {
+				return new faceArea(this.px + this.depth + 2*this.width, this.py, this.depth, this.depth);
+			}
+		}
+
+
+		// Global definition of the rectangular or square skin areas
+		// Lines 1-4
+		const areaNull = new faceArea(0, 0, 0, 0); // special, nothing
+		const areaMinetest = new faceArea(0, 0, 16, 8); // special, the whole Mintest skin / the upper half of the Minecraft skin
+		const areaMinecraft = new faceArea(0, 0, 16, 16); // special, the whole Minecraft skin
+		const areaHead = new UvArea(constHead);
+		const areaHat = new UvArea(constHat);
+		// Lines 5-8
+		const areaLegRight = new UvArea(constLegRight);
+		const areaBody = new UvArea(constBody);
+		const areaArmRight = new UvArea(constArmRight);
+		const areaUnusedMinecraft = new faceArea(14, 4, 2, 8); // special unusedL
+		const areaUnusedMinetest = new faceArea(14, 4, 2, 1); // special unusedR
+		const areaCapeMinetest = new faceArea(14, 5, 2, 3); // special, other location than Minecraft:areaJacket.back
+		// Lines 9-12
+		const areaTrouserRight = new UvArea(constTrouserRight);
+		const areaJacket = new UvArea(constJacket);
+		const areaSleeveRight = new UvArea(constSleeveRight);
+		// Lines 13-16
+		const areaTrouserLeft = new UvArea(constTrouserLeft);
+		const areaLegLeft = new UvArea(constLegLeft); // areaLeftLeg
+		const areaArmLeft = new UvArea(constArmLeft);
+		const areaSleeveLeft = new UvArea(constSleeveLeft);
+
+
+		// Strings used in HTML as IDs and in code
+		// Use these vars while coding to avoid typos.
+		const constImgLoader = "imgLoader";
+		const constSkinMinecraft = "minecraft";
+		const constSkinMinetest = "minetest";
+		const constIdSrcImage = "srcImg";
+		const idImages = "images"
+		const strTransparency = "transparency";
+
+		// uvFaceWidth: Block size in pixels, 1/16 of the image width. 4px for standard skins with 64px width.
+		var uvFaceWidth = 4;
+
+		// srcImg, dstImg: The public source and destination images
+		var srcImg = document.getElementById(constIdSrcImage);
+
+		// dstCanvas: The internal image buffer for the modifications (copy, alpha, mirror, ...)
+		var dstCanvas = document.createElement('canvas');
+
+
+		// Main function to load the image after the user selected it
+		function loadImage() {
+			// reset zoom level before loading. Otherwise "em" scaling causes random issues
+
+			// load selected image
+			var file = document.getElementById(constImgLoader).files[0];
+			srcImg.style.width = "auto";
+			srcImg.style.height = "auto";
+			srcImg.addEventListener("load", function () {
+				imageLoaded();
+			}, false);
+			srcImg.src = window.URL.createObjectURL(file);
+			// function continues in imageLoaded() as soon as the image is loaded
+		}
+		function imageLoaded() {
+			var srcWidth = srcImg.width;
+			var srcHeight = srcImg.height; // Skins must be square or ½ square box. Otherwise skin conversion fails
+			var dstWidth = srcWidth;
+			var dstHeight = srcWidth / 2; // srcWidth/2 to get ½ square. We don't rely on srcHeight
+			uvFaceWidth = srcWidth / 16;
+			uvFaceWidth = srcWidth / constUvWidth;
+
+			// assume Minecraft skin
+			var srcSkinType = constSkinMinecraft;
+			if (srcWidth == srcHeight * 2) {
+				// setting skin source to Minetest and the image format to square (widht=height).
+				srcSkinType = constSkinMinetest;
+				dstHeight = srcWidth;
+			}
+
+			// Set image size to 'em' to allow zooming
+			srcImg.style.width = srcWidth / 16 + "em";
+			srcImg.style.height = srcHeight / 16 + "em";
+			dstImg.style.width = dstWidth / 16 + "em";
+			dstImg.style.height = dstHeight / 16 + "em";
+
+			if ((srcWidth != srcHeight) && (srcWidth == (srcHeight * 2))) {
+				if (srcWidth == srcHeight) {
+					// Minecraft image, show copy buttons etc.
+					document.getElementById(constImageControls).style.display = "initial";
+				}
+			} else {
+				// Expect the unexpected
+				alert("Загрузи не квадрат!!!");
+				return;
+			};
+
+			// Copy upper part of skin (1:1)
+			dstCanvas.width = dstWidth;
+			dstCanvas.height = dstHeight;
+			var context = dstCanvas.getContext('2d');
+			draw(srcImg, areaMinetest, context, areaMinetest, uvFaceWidth, 0);
+
+			// adjust for Minetest / Minecraft
+			if (srcSkinType == constSkinMinecraft) {
+				// cleanup unused areas
+				draw(srcImg, areaHead.unusedL, context, areaNull, uvFaceWidth, 0);
+				draw(srcImg, areaHead.unusedR, context, areaNull, uvFaceWidth, 0);
+				draw(srcImg, areaHat.unusedL, context, areaNull, uvFaceWidth, 0);
+				draw(srcImg, areaHat.unusedR, context, areaNull, uvFaceWidth, 0);
+				draw(srcImg, areaLegRight.unusedL, context, areaNull, uvFaceWidth, 0);
+				draw(srcImg, areaLegRight.unusedR, context, areaNull, uvFaceWidth, 0);
+				draw(srcImg, areaBody.unusedL, context, areaNull, uvFaceWidth, 0);
+				draw(srcImg, areaBody.unusedR, context, areaNull, uvFaceWidth, 0);
+				draw(srcImg, areaArmRight.unusedL, context, areaNull, uvFaceWidth, 0);
+				draw(srcImg, areaArmRight.unusedR, context, areaNull, uvFaceWidth, 0);
+				draw(srcImg, areaUnusedMinetest, context, areaNull, uvFaceWidth, 0);
+				// copy Jacket.back(Cape) to areaCapeMinetest
+				draw(srcImg, areaJacket.back, context, areaCapeMinetest, uvFaceWidth, 0);
+			} else {
+				// srcSkinType == constSkinMinetest
+				// cleanup unused areas in upper part of the image
+				draw(srcImg, areaHead.unusedL, context, areaNull, uvFaceWidth, 0);
+				draw(srcImg, areaHead.unusedR, context, areaNull, uvFaceWidth, 0);
+				draw(srcImg, areaHat.unusedL, context, areaNull, uvFaceWidth, 0);
+				draw(srcImg, areaHat.unusedR, context, areaNull, uvFaceWidth, 0);
+				draw(srcImg, areaLegRight.unusedL, context, areaNull, uvFaceWidth, 0);
+				draw(srcImg, areaLegRight.unusedR, context, areaNull, uvFaceWidth, 0);
+				draw(srcImg, areaBody.unusedL, context, areaNull, uvFaceWidth, 0);
+				draw(srcImg, areaBody.unusedR, context, areaNull, uvFaceWidth, 0);
+				draw(srcImg, areaArmRight.unusedL, context, areaNull, uvFaceWidth, 0);
+				draw(srcImg, areaArmRight.unusedR, context, areaNull, uvFaceWidth, 0);
+				draw(srcImg, areaUnusedMinecraft, context, areaNull, uvFaceWidth, 0);
+				// Lower part of the image is blank, nothing to clear
+
+				// copy Jacket.back
+				draw(srcImg, areaCapeMinetest, context, areaJacket.back, uvFaceWidth, 0);
+
+				// copy and mirror leg: top
+				draw(srcImg, areaLegRight.top, context, areaLegLeft.top, uvFaceWidth, 1);
+				// copy and mirror leg: bottom
+				draw(srcImg, areaLegRight.bottom, context, areaLegLeft.bottom, uvFaceWidth, 1);
+				// copy and mirror leg: right, front, left
+				draw(srcImg, areaLegRight.lfr, context, areaLegLeft.lfr, uvFaceWidth, 1);
+				// copy and mirror leg: back
+				draw(srcImg, areaLegRight.back, context, areaLegLeft.back, uvFaceWidth, 1);
+
+				// copy and mirror arm: top
+				draw(srcImg, areaArmRight.top, context, areaArmLeft.top, uvFaceWidth, 1);
+				// copy and mirror arm: bottom
+				draw(srcImg, areaArmRight.bottom, context, areaArmLeft.bottom, uvFaceWidth, 1);
+				// copy and mirror arm: right, front, left
+				draw(srcImg, areaArmRight.lfr, context, areaArmLeft.lfr, uvFaceWidth, 1);
+				// copy and mirror arm: back
+				draw(srcImg, areaArmRight.back, context, areaArmLeft.back, uvFaceWidth, 1);
+			}
+
+			// copy data from the internal dstCanvas to the public dstImg
+			var tmpDataUrl = dstCanvas.toDataURL('image/png');
+			var skincompl = tmpDataUrl;
+			$("#asdasd").html('<img src="'+skincompl+'" />');
+
+		}
+
+		function draw(srcImg, srcArea, dstContext, dstArea, uvFaceWidth, flip) {
+			var bsClipX = srcArea.x * uvFaceWidth;
+			var bsClipY = srcArea.y * uvFaceWidth;
+			var bsWidth = srcArea.w * uvFaceWidth;
+			var bsHeight = srcArea.h * uvFaceWidth;
+			var bsDstX = dstArea.x * uvFaceWidth;
+			var bsDstY = dstArea.y * uvFaceWidth;
+
+			if ((dstArea.w == 0) || (dstArea.h == 0)) {
+				dstContext.clearRect(bsClipX, bsClipY, bsWidth, bsHeight);
+			} else if (flip == 0) {
+				dstContext.drawImage(srcImg, bsClipX, bsClipY, bsWidth, bsHeight, bsDstX, bsDstY, bsWidth, bsHeight);
+			} else {
+				var canvas = document.createElement('canvas');
+				canvas.width = bsWidth;
+				canvas.height = bsHeight;
+				var context = canvas.getContext('2d');
+				context.save();
+				if (flip == 1) {
+					context.translate(bsWidth, 0);
+					context.scale(-1, 1);
+				}
+				context.drawImage(srcImg, bsClipX, bsClipY, bsWidth, bsHeight, 0, 0, bsWidth, bsHeight);
+				context.restore();
+				dstContext.drawImage(canvas, bsDstX, bsDstY, bsWidth, bsHeight);
+			}
+		}
+
+	</script>
+</body>
+
+</html>

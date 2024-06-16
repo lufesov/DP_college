@@ -1,0 +1,62 @@
+{
+    "_comment": "DO NOT EDIT: FILE GENERATED AUTOMATICALLY BY PTERODACTYL PANEL - PTERODACTYL.IO",
+    "meta": {
+        "version": "PTDL_v2",
+        "update_url": null
+    },
+    "exported_at": "2022-08-04T14:04:29+03:00",
+    "name": "Gravit LaunchServer",
+    "author": "support@meproject.ru",
+    "description": "Gravit LaunchServer egg.",
+    "features": null,
+    "docker_images": {
+        "JDK21": "ghcr.io\/cat-tom\/gravit-egg:latest"
+    },
+    "file_denylist": [],
+    "startup": "java -Xms128M -Xmx{{SERVER_MEMORY}}M -Dterminal.jline=false -Dterminal.ansi=true -javaagent:LaunchServer.jar -jar LaunchServer.jar",
+    "config": {
+        "files": "{}",
+        "startup": "{\r\n    \"done\": \"LaunchServer started\",\r\n    \"userInteraction\": []\r\n}",
+        "logs": "{}",
+        "stop": "stop"
+    },
+    "scripts": {
+        "installation": {
+            "script": "#!\/bin\/ash\r\n# Gravit LaunchServer installation script\r\n# Made by rkkm, MeProject team.\r\n#\r\n# Server files: \/mnt\/server\r\n\r\napk add --no-cache curl unzip\r\n\r\nif [ ! -d \/mnt\/server ]; then\r\n    mkdir \/mnt\/server\/\r\nfi\r\n\r\ncd \/mnt\/server\/\r\n\r\necho \"Downloading LaunchServer\"\r\necho \"NOTE: Modules will be downloaded but will NOT be installed\"\r\nsleep 3\r\ns_version=${SERVER_VERSION}\r\nif [ \"$s_version\" = \"latest\" ]; then s_version=$(curl --silent \"https:\/\/api.github.com\/repos\/GravitLauncher\/Launcher\/releases\/latest\" | grep '\"tag_name\":' | sed -E 's\/.*\"([^\"]+)\".*\/\\1\/' | cut -c2-); fi\r\n\r\ncurl -L https:\/\/github.com\/GravitLauncher\/Launcher\/releases\/download\/v${s_version}\/LaunchServer.jar --output LaunchServer.jar \r\ncurl -L https:\/\/github.com\/GravitLauncher\/Launcher\/releases\/download\/v${s_version}\/ServerWrapper.jar --output ServerWrapper.jar\r\ncurl -L https:\/\/github.com\/GravitLauncher\/Launcher\/releases\/download\/v${s_version}\/libraries.zip --output libraries.zip\r\ncurl -L https:\/\/github.com\/GravitLauncher\/Launcher\/releases\/download\/v${s_version}\/LaunchServerModules.zip --output LaunchServerModules.zip\r\ncurl -L https:\/\/github.com\/GravitLauncher\/Launcher\/releases\/download\/v${s_version}\/LauncherModules.zip --output LauncherModules.zip\r\nunzip -o libraries.zip\r\nrm libraries.zip\r\n\r\ndownloading_r=${SHOULD_DOWNLOAD_RUNTIME}\r\nif [ $downloading_r ]; then\r\n    echo \"Donwloading Runtime\"\r\n    echo \"NOTE: Modules will be downloaded but will NOT be installed\"\r\n    echo \"NOTE: Default runtime will be downloaded. Don't forget to replace it with your version\"\r\n    sleep 5\r\n    r_version=${RUNTIME_VERSION}\r\n    if [ \"$r_version\" = \"latest\" ]; then r_version=$(curl --silent \"https:\/\/api.github.com\/repos\/GravitLauncher\/LauncherRuntime\/releases\/latest\" | grep '\"tag_name\":' | sed -E 's\/.*\"([^\"]+)\".*\/\\1\/' | cut -c2-); fi\r\n\r\n    curl -L https:\/\/github.com\/GravitLauncher\/LauncherRuntime\/releases\/download\/v${r_version}\/JavaRuntime_lmodule.jar --output JavaRuntime-${r_version}.jar \r\n    curl -L https:\/\/github.com\/GravitLauncher\/LauncherRuntime\/releases\/download\/v${r_version}\/runtime.zip --output runtime.zip\r\n    mkdir -p runtime\/\r\n    unzip -o runtime.zip -d runtime\/\r\n    rm runtime.zip\r\nfi\r\n\r\necho \"Done!\"",
+            "container": "alpine:3.10",
+            "entrypoint": "ash"
+        }
+    },
+    "variables": [
+        {
+            "name": "Gravit LaunchServer Version",
+            "description": "Version of LaunchServer to install",
+            "env_variable": "SERVER_VERSION",
+            "default_value": "latest",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|max:20",
+            "field_type": "text"
+        },
+        {
+            "name": "Gravit Runtime Version",
+            "description": "Version of Gravit Runtime to install",
+            "env_variable": "RUNTIME_VERSION",
+            "default_value": "latest",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|max:20",
+            "field_type": "text"
+        },
+        {
+            "name": "Download Runtime",
+            "description": "Should we download Runtime when installing LaunchServer. RUNTIME_VERSION will be used as version",
+            "env_variable": "SHOULD_DOWNLOAD_RUNTIME",
+            "default_value": "1",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|boolean",
+            "field_type": "text"
+        }
+    ]
+}
